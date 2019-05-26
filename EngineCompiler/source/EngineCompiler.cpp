@@ -7,8 +7,10 @@
 
 
 std::vector<std::string> foundComponentPaths;
+std::vector<std::string> cppPaths;
 std::string applicationPath;
 const std::string dotComponent = ".component";
+const std::string dotCpp = ".cpp";
 std::string componentsDirectory;
 std::string devCommandPromptDir;
 
@@ -20,14 +22,88 @@ void FindComponentFiles()
 	for (const auto & entry : std::filesystem::recursive_directory_iterator("components"))
 	{
 		const std::string tempPath = entry.path().u8string();
-			foundComponentPaths.push_back(applicationPath + "\\" + entry.path().u8string());
 		if (tempPath.compare(tempPath.size() - dotComponent.size(), dotComponent.size(), dotComponent) == 0)
 		{
+			foundComponentPaths.push_back(applicationPath + "\\" + entry.path().u8string());
 		}
 	}
 	for (const std::string & path : foundComponentPaths)
 	{
 		std::cout << "Found component file : " << path << std::endl;
+	}
+}
+
+void ConvertCononentToCpp()
+{
+	cppPaths = std::vector<std::string>();
+	for (const std::string & path : foundComponentPaths)
+	{
+		std::ifstream input(path.c_str());
+		if (!input)
+		{
+			std::cout << "Could not locate component file at '" << path << "'." << std::endl;			
+		}
+		else
+		{
+			std::vector<std::string> tempHeader;
+			std::vector<std::string> tempImplem;
+			std::vector<std::string> header;
+			std::vector<std::string> implem;
+			bool writingHeader = false;
+			bool writingImplem = false;
+			std::string tempLine;
+			bool headerIncluded = false;
+			std::string componentName = path.substr(componentsDirectory.size() + 1, (path.size() - componentsDirectory.size() - dotComponent.size() - 1));
+			while (std::getline(input, tempLine))
+			{
+				if (tempLine.size() > 0)
+				{
+					if (strcmp(tempLine.c_str(), "# IMPLEMENTATION #") == 0) { writingHeader = false; writingImplem = true; }
+					else if (strcmp(tempLine.c_str(), "# HEADER #") == 0) { writingHeader = true; writingImplem = false; }
+					else
+					{
+						if (writingHeader)
+						{
+							tempHeader.push_back(tempLine);
+						}
+						if (writingImplem)
+						{
+							if (strcmp(tempLine.c_str(), ("#include \"" + componentName + ".h\"").c_str()) == 0) { headerIncluded = true; }
+
+							tempImplem.push_back(tempLine);
+						}
+					}
+				}
+			}
+			if (headerIncluded == false)
+			{
+				implem.push_back("#include \"" + componentName + ".h\"");
+			}
+			for (const std::string & line : tempHeader)
+			{
+				header.push_back(line);
+			}
+			for (const std::string & line : tempImplem)
+			{
+				implem.push_back(line);
+			}
+
+			std::ofstream output;
+			output.open(componentsDirectory + "/" + componentName + ".h");
+			for (const std::string & line : header)
+			{
+				output << line + "\n";
+			}
+			output.close();
+			output.open(componentsDirectory + "/" + componentName + ".cpp");
+			for (const std::string & line : implem)
+			{
+				output << line + "\n";
+			}
+			output.close();
+
+			cppPaths.push_back(componentsDirectory + "/" + componentName + ".cpp");
+		}
 	}
 }
 
@@ -52,12 +128,16 @@ void FindDevCommandPrmopt()
 void CompileFilesToApplication()
 {
 	if (devCommandPromptDir == "") return;
-	for (const std::string & path : foundComponentPaths)
+	std::string cppNames = "";
+	for (const std::string & path : cppPaths)
 	{
+		cppNames += (" " + path.substr(componentsDirectory.size() + 1));
+	}
+	if (cppPaths.size() >= 1)
+	{
+		std::string cPath = cppPaths[0];
 		std::string actionString = ("c: && cd " + devCommandPromptDir + " && vcvars64 && ");
-		std::string componentFileName = path.substr(componentsDirectory.size() + 1);
-		std::cout << "Compiling component file : " << componentFileName << std::endl;
-		actionString = (actionString + path.substr(0, 2) + " && cd " + componentsDirectory + " && cl /EHsc " + componentFileName);
+		actionString = (actionString + cPath.substr(0, 2) + " && cd " + componentsDirectory + " && cl /EHsc" + cppNames);
 		system(actionString.c_str());
 	}
 }
@@ -66,6 +146,7 @@ int main()
 {
 	FindComponentFiles();
 	FindDevCommandPrmopt();
+	ConvertCononentToCpp();
 	CompileFilesToApplication();
 
 	while (1 != 0) {}

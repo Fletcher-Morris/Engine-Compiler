@@ -1,0 +1,12 @@
+# HEADER #
+
+#include <iostream>
+
+void DoSomethingElse();
+
+# IMPLEMENTATION #
+
+void DoSomethingElse()
+{
+	std::cout << "Doing something else" << std::endl;
+}

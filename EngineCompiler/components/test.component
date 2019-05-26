@@ -1,0 +1,17 @@
+# HEADER #
+
+#include <iostream>
+
+# IMPLEMENTATION #
+
+#include "another.h"
+
+int main()
+{
+    std::cout << "This is working!" << std::endl;
+	while (0 == 0)
+	{
+		DoSomethingElse();
+	};
+	return 0;
+}
