@@ -261,3 +261,5 @@ paket-files/
 __pycache__/
 *.pyc
 EngineCompiler/components/intermediate/
+
+EngineCompiler/components/Program\.exe
