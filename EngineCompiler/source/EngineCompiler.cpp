@@ -40,6 +40,11 @@ void ConvertCononentToCpp()
 {
 	cppPaths = std::vector<std::string>();
 	componentNames = std::vector<std::string>();
+	if (foundComponentPaths.size() == 0)
+	{
+		std::cout << "No component files found." << std::endl;
+		return;
+	}
 	for (const std::string & path : foundComponentPaths)
 	{
 		componentNames.push_back(path.substr(componentsDirectory.size() + 1, (path.size() - componentsDirectory.size() - dotComponent.size() - 1)));
@@ -120,6 +125,7 @@ void ConvertCononentToCpp()
 
 void CreateComponentsClass()
 {
+	if (cppPaths.size() == 0) return;
 	std::ofstream output;
 	output.open(intermediateDirectory + "\\components.h");
 	output << "#include <string>\n";
@@ -166,6 +172,7 @@ void FindDevCommandPrmopt()
 void CompileFilesToApplication()
 {
 	if (devCommandPromptDir == "") return;
+	if (cppPaths.size() == 0) return;
 	std::string cppNames = "";
 	for (const std::string & path : cppPaths)
 	{
